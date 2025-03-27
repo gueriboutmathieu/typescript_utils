@@ -8,6 +8,16 @@ on:
         description: "Node version"
         required: false
         default: "22"
+      deploy-to-github-pages:
+        type: boolean
+        description: "Deploy to GitHub Pages"
+        required: false
+        default: false
+      custom-domain-name:
+        type: string
+        description: "Custom domain name"
+        required: false
+        default: ""
 
 jobs:
   check-release-tag:
@@ -71,3 +81,22 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.check-release-tag.outputs.version }}
+    
+      - name: Build static app
+        if: inputs.deploy-to-github-pages
+        run: |
+          export PATH="./.fnm:$PATH"
+          eval "$(fnm env --use-on-cd --shell bash)"
+          pnpm run generate
+    
+      - name: Add custom domain name
+        if: inputs.deploy-to-github-pages && inputs.custom-domain-name != ''
+        run: |
+          echo ${{ inputs.custom-domain-name }} > .output/public/CNAME
+    
+      - name: Deploy to GitHub Pages
+        if: inputs.deploy-to-github-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .output/public
