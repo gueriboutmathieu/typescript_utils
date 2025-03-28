@@ -63,7 +63,7 @@ jobs:
       - name: Setup env vars
         run: |
           # get map of key value of secrets env vars from inputs
-          SECRETS_ENV_VARS=$(echo '${{ inputs.pytest-secrets-env-vars }}' | jq -r 'to_entries | .[] | "\(.key)=\(.value)"')
+          SECRETS_ENV_VARS=$(echo '${{ inputs.secret-env-vars }}' | jq -r 'to_entries | .[] | "\(.key)=\(.value)"')
           # get map of key value of secrets from all secrets
           ALL_SECRETS=$(echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | "\(.key)=\(.value)"')
           # for each secret env var, get the secret value and set the env var
