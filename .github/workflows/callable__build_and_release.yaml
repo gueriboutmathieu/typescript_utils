@@ -18,6 +18,16 @@ on:
         description: "Custom domain name"
         required: false
         default: ""
+      env-vars:
+        type: string
+        description: "Additional environment variables to set"
+        required: false
+        default: '{}'
+      secret-env-vars:
+        type: string
+        description: "Additional environment variables to set, with values to get from github secrets"
+        required: false
+        default: '{}'
 
 jobs:
   check-release-tag:
@@ -50,6 +60,30 @@ jobs:
     needs: check-release-tag
     if: needs.check-release-tag.outputs.version != ''
     steps:
+      - name: Setup env vars
+        run: |
+          # get map of key value of secrets env vars from inputs
+          SECRETS_ENV_VARS=$(echo '${{ inputs.pytest-secrets-env-vars }}' | jq -r 'to_entries | .[] | "\(.key)=\(.value)"')
+          # get map of key value of secrets from all secrets
+          ALL_SECRETS=$(echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | "\(.key)=\(.value)"')
+          # for each secret env var, get the secret value and set the env var
+          for SECRET_ENV_VAR in $SECRETS_ENV_VARS; do
+            ENV_VAR_KEY=$(echo "$SECRET_ENV_VAR" | cut -d= -f1)
+            SECRET_ENV_VAR_KEY=$(echo "$SECRET_ENV_VAR" | cut -d= -f2)
+            for SECRET in $ALL_SECRETS; do
+              SECRET_KEY=$(echo "$SECRET" | cut -d= -f1)
+              SECRET_VALUE=$(echo "$SECRET" | cut -d= -f2)
+              if [ "$SECRET_KEY" == "$SECRET_ENV_VAR_KEY" ]; then
+                echo "$ENV_VAR_KEY=$SECRET_VALUE" >> $GITHUB_ENV
+              fi
+            done
+          done
+
+          ENV_VARS=$(echo '${{ inputs.env-vars }}' | jq -r 'to_entries | map("\(.key)=\(.value)") | .[]')
+          for ENV_VAR in $ENV_VARS; do
+            echo "$ENV_VAR" >> $GITHUB_ENV
+          done
+
       - name: Checkout code
         uses: actions/checkout@v4
 
