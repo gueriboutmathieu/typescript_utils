@@ -75,6 +75,7 @@ jobs:
               SECRET_VALUE=$(echo "$SECRET" | cut -d= -f2)
               if [ "$SECRET_KEY" == "$SECRET_ENV_VAR_KEY" ]; then
                 echo "$ENV_VAR_KEY=$SECRET_VALUE" >> $GITHUB_ENV
+                echo "$ENV_VAR_KEY=$SECRET_VALUE" >> .env
               fi
             done
           done
@@ -82,6 +83,7 @@ jobs:
           ENV_VARS=$(echo '${{ inputs.env-vars }}' | jq -r 'to_entries | map("\(.key)=\(.value)") | .[]')
           for ENV_VAR in $ENV_VARS; do
             echo "$ENV_VAR" >> $GITHUB_ENV
+            echo "$ENV_VAR" >> .env
           done
 
       - name: Checkout code
